@@ -21,7 +21,7 @@ export const authOptions: NextAuthOptions = {
           const user = await UserModel.findOne({
             $or: [
               { email: credentials.identifier },
-              { username: credentials.identifier },
+              { username: credentials.password },
             ],
           });
 
@@ -31,12 +31,12 @@ export const authOptions: NextAuthOptions = {
           if (!user.isVerified) {
             throw new Error("Please verify your account");
           }
-
+          
           const isPasswordCorrect = await bcryptjs.compare(
             credentials.password,
             user.password
           );
-
+          
           if (!isPasswordCorrect) {
             throw new Error("password is incorrect");
           }
@@ -61,34 +61,38 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async signIn({ user, profile }) {
+    async signIn({account, user, profile }) {
       console.log('running, 63');
-      
-      try {
-        await dbConnect();
-        const existingUser = await UserModel.findOne({ email: profile?.email });
-
-        if (!existingUser) {
-          const newUser = new UserModel({
-            username: profile?.name,
-            email: profile?.email,
-            isVerified: true,
-          });
-          await newUser.save();
-          user._id = newUser._id;
-          user.isVerified = newUser.isVerified;
-          user.username = newUser.username;
-        } else {
-          user._id = existingUser._id;
-          user.isVerified = existingUser.isVerified;
-          user.username = existingUser.username;
+      if(account?.provider === "google"){
+        try {
+          await dbConnect();
+          const existingUser = await UserModel.findOne({ email: profile?.email });
+          if (!existingUser) {
+            const newUser = new UserModel({
+              username: profile?.name,
+              email: profile?.email,
+              isVerified: true,
+            });
+            await newUser.save();
+            user._id = newUser._id;
+            user.isVerified = newUser.isVerified;
+            user.username = newUser.username;
+          } else {
+            user._id = existingUser._id;
+            user.isVerified = existingUser.isVerified;
+            user.username = existingUser.username;
+          }
+          return true;
+        } catch (error) {
+          console.error("Error while signing in from Google:", error);
+          return false;
         }
+      }else if(account?.provider === "credentials"){
         return true;
-      } catch (error) {
-        console.error("Error while signing in from Google:", error);
-        return false;
       }
+      return false;
     },
+      
     async jwt({ token, user }) {
       if (user) {
         token._id = user._id?.toString();
