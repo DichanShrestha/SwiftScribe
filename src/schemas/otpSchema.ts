@@ -1,7 +1,10 @@
-import {z} from 'zod'
+import { z } from 'zod';
 
-export const otpSchema = z.object({
-    pin: z.string().min(6, {
-      message: "Your one-time password must be 6 characters.",
-    }),
-  })
+export const signInSchema = z.object({
+  identifier: z.string().min(1, {
+    message: "Username/Email is required.",
+  }),
+  password: z.string().min(1, {
+    message: "Password is required.",
+  }),
+});

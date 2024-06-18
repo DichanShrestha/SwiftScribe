@@ -4,6 +4,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import UserModel from "@/models/user.models";
 import bcryptjs from "bcryptjs";
 import GoogleProvider from "next-auth/providers/google";
+import { signInSchema } from "@/schemas/signInSchema"; // Adjust the path accordingly
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -14,36 +15,54 @@ export const authOptions: NextAuthOptions = {
         identifier: { label: "Username/Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials: any): Promise<any> {
+      async authorize(credentials) {
         await dbConnect();
-        console.log('running -, 19');
+
+        if (!credentials) {
+          throw new Error("Missing credentials");
+        }
+
+        // Validate credentials using signInSchema
+        const parseResult = signInSchema.safeParse(credentials);
+        if (!parseResult.success) {
+          console.error("Validation error:", parseResult.error);
+          throw new Error("Invalid credentials");
+        }
+
+        const { identifier, password } = parseResult.data;
+
+        console.log('Credentials received:', { identifier });
+
         try {
           const user = await UserModel.findOne({
             $or: [
-              { email: credentials.identifier },
-              { username: credentials.identifier },
+              { email: identifier },
+              { username: identifier },
             ],
           });
 
           if (!user) {
+            console.error("No user found with identifier:", identifier);
             throw new Error("No user found!");
           }
+
           if (!user.isVerified) {
+            console.error("User is not verified:", identifier);
             throw new Error("Please verify your account");
           }
 
-          const isPasswordCorrect = await bcryptjs.compare(
-            credentials.password,
-            user.password
-          );
+          const isPasswordCorrect = await bcryptjs.compare(password, user.password);
 
           if (!isPasswordCorrect) {
-            throw new Error("password is incorrect");
+            console.error("Incorrect password for user:", identifier);
+            throw new Error("Password is incorrect");
           }
+
+          console.log("User authenticated successfully:", user.username);
           return user;
         } catch (error) {
-          console.error(error);
-          return null;
+          console.error("Error during authorization:", error);
+          throw new Error("Authorization failed");
         }
       },
     }),
@@ -62,8 +81,6 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async signIn({ user, profile }) {
-      console.log('running, 63');
-      
       try {
         await dbConnect();
         const existingUser = await UserModel.findOne({ email: profile?.email });
@@ -85,7 +102,7 @@ export const authOptions: NextAuthOptions = {
         }
         return true;
       } catch (error) {
-        console.error("Error while signing in from Google:", error);
+        console.error("Error during Google sign-in:", error);
         return false;
       }
     },

@@ -111,7 +111,7 @@ export default function SignupFormDemo() {
             <BottomGradient />
           </button>
 
-          <p className="dark:text-gray-300 text-sm mt-3 -mb-4">Don't have an account? <Link href="/sign-up">Sign up</Link></p>
+          <p className="dark:text-gray-300 text-sm mt-3 -mb-4">Dont have an account? <Link href="/sign-up">Sign up</Link></p>
 
           <div className="bg-gradient-to-r from-transparent via-neutral-300 dark:via-neutral-700 to-transparent my-8 h-[1px] w-full" />
 
