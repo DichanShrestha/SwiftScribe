@@ -16,7 +16,6 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials: any): Promise<any> {
         await dbConnect();
-        console.log('running -, 19');
         try {
           const user = await UserModel.findOne({
             $or: [
@@ -61,39 +60,52 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async signIn({ user, profile }) {
-      console.log('running, 63');
-      
-      try {
-        await dbConnect();
-        const existingUser = await UserModel.findOne({ email: profile?.email });
-
-        if (!existingUser) {
-          const newUser = new UserModel({
-            username: profile?.name,
+    async signIn({ account, user, profile }) {
+      if (account?.provider === "google") {
+        try {
+          await dbConnect();
+          const existingUser = await UserModel.findOne({
             email: profile?.email,
-            isVerified: true,
           });
-          await newUser.save();
-          user._id = newUser._id;
-          user.isVerified = newUser.isVerified;
-          user.username = newUser.username;
-        } else {
-          user._id = existingUser._id;
-          user.isVerified = existingUser.isVerified;
-          user.username = existingUser.username;
+          if (!existingUser) {
+            const newUser = new UserModel({
+              username: profile?.name,
+              email: profile?.email,
+              isVerified: true,
+              avatar: user.image || '/public/avatar.jpeg'
+            });
+            console.log(newUser);
+            
+            await newUser.save();
+            console.log(newUser);
+            
+            user._id = newUser._id;
+            user.isVerified = newUser.isVerified;
+            user.username = newUser.username;
+            user.avatar = newUser.avatar;
+          } else {
+            user._id = existingUser._id;
+            user.isVerified = existingUser.isVerified;
+            user.username = existingUser.username;
+            user.avatar = existingUser.avatar;
+          }
+          return true;
+        } catch (error) {
+          console.error("Error while signing in from Google:", error);
+          return false;
         }
+      } else if (account?.provider === "credentials") {
         return true;
-      } catch (error) {
-        console.error("Error while signing in from Google:", error);
-        return false;
       }
+      return false;
     },
+
     async jwt({ token, user }) {
       if (user) {
         token._id = user._id?.toString();
         token.isVerified = user.isVerified;
         token.username = user.username;
+        token.avatar = user.avatar;
       }
       return token;
     },
@@ -102,6 +114,7 @@ export const authOptions: NextAuthOptions = {
         session.user._id = token._id?.toString();
         session.user.isVerified = token.isVerified;
         session.user.username = token.username;
+        session.user.avatar = token.avatar;
       }
       return session;
     },

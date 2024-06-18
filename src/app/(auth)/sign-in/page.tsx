@@ -31,7 +31,8 @@ export default function SignupFormDemo() {
       identifier: data.identifier,
       password: data.password,
     });
-
+    console.log(result);
+    
     if (result?.error) {
       if (result.error === "CredentialsSignin") {
         toast({
@@ -49,13 +50,18 @@ export default function SignupFormDemo() {
     }
 
     if (result?.url) {
+      toast({
+        title: "Sign-in success",
+        description: ""
+      })
       router.replace("/dashboard");
     }
   };
 
-  const onSubmitGoogle = async () => {
+  const onSubmitGoogle = async (e: any) => {
+    e.preventDefault()
     const result = await signIn("google", {redirect: false});
-    
+
     if (result?.error) {
       if (result.error === "CredentialsSignin") {
         toast({

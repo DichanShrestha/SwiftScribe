@@ -8,6 +8,7 @@ export interface User extends Document {
   isSubscribed: boolean;
   verifyCode?: string;
   verifyCodeExpiry?: boolean;
+  avatar?: string;
 }
 
 const UserSchema = new Schema(
@@ -37,6 +38,10 @@ const UserSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    avatar: {
+      type: String,
+      default: '/public/avatar.jpeg'
+    }
   },
   {
     timestamps: true,
