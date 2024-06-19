@@ -20,7 +20,7 @@ export const authOptions: NextAuthOptions = {
           const user = await UserModel.findOne({
             $or: [
               { email: credentials.identifier },
-              { username: credentials.identifier },
+              { username: credentials.password },
             ],
           });
 
@@ -30,12 +30,12 @@ export const authOptions: NextAuthOptions = {
           if (!user.isVerified) {
             throw new Error("Please verify your account");
           }
-
+          
           const isPasswordCorrect = await bcryptjs.compare(
             credentials.password,
             user.password
           );
-
+          
           if (!isPasswordCorrect) {
             throw new Error("password is incorrect");
           }
